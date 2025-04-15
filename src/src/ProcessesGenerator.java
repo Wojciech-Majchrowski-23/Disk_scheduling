@@ -11,11 +11,11 @@ public class ProcessesGenerator {
 
         int arrivalTime, position;
 
-        for(int i = 0; i < numberOfProcesses; i++){
-            arrivalTime = (int)(Math.random() * maxArrivalTime);
-            position = (int)(Math.random() * 1000);
-            processes.add(new Process(i, arrivalTime, position));
-        }
+//        for(int i = 0; i < numberOfProcesses; i++){
+//            arrivalTime = (int)(Math.random() * maxArrivalTime);
+//            position = (int)(Math.random() * 1000);
+//            processes.add(new Process(i, arrivalTime, position));
+//        }
 
         ///special verison
 

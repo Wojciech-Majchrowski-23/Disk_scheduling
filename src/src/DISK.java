@@ -13,45 +13,58 @@ public class DISK {
     public int firstComeFirstServed(ArrayList<Process> processes) {
         localTime = -1;
         Queue<Process> diskQueue = new LinkedList<>();
-        System.out.printf("%-30s", "[First_Come_First_Served]");
+        System.out.printf("%-45s", "[First_Come_First_Served]");
         return processingForFCFS(processes, diskQueue);
     }
 
     public int shortestSeekTimeFirst(ArrayList<Process> processes) {
         localTime = -1;
         Queue<Process> diskQueue = new LinkedList<>();
-        System.out.printf("%-30s","[Shortest_Seek_Time_First]");
+        System.out.printf("%-45s","[Shortest_Seek_Time_First]");
         return processingForSSTF(processes, diskQueue);
     }
 
     public int scan(ArrayList<Process> processes) {
         localTime = -1;
         Queue<Process> diskQueue = new LinkedList<>();
-        System.out.printf("%-30s","[Scan]");
+        System.out.printf("%-45s","[Scan]");
         return processingForScan(processes, diskQueue);
+    }
+
+    public int scanWithIrritatingProcesses(ArrayList<Process> processes) {
+        localTime = -1;
+        Queue<Process> diskQueue = new LinkedList<>();
+        System.out.printf("%-45s","[Scan with irritating processes]");
+        return processingForScanWithIrritatingProcesses(processes, diskQueue);
     }
 
     public int scanWithEDF(ArrayList<Process> processes) {
         localTime = -1;
         Queue<Process> diskQueue = new LinkedList<>();
-        System.out.printf("%-30s","[Scan with EDF]");
+        System.out.printf("%-45s","[Scan with EDF]");
         return processingForScanWithEDF(processes, diskQueue);
     }
 
     public int cScan(ArrayList<Process> processes) {
         localTime = -1;
         Queue<Process> diskQueue = new LinkedList<>();
-        System.out.printf("%-30s","[C-Scan]");
+        System.out.printf("%-45s","[C-Scan]");
         return processingForCScan(processes, diskQueue);
+    }
+
+    public int cScanWithIrritatingProcesses(ArrayList<Process> processes) {
+        localTime = -1;
+        Queue<Process> diskQueue = new LinkedList<>();
+        System.out.printf("%-45s","[C-Scan with irritating processes]");
+        return processingForCScanWithIrritatingProcesses(processes, diskQueue);
     }
 
     public int cScanWithFDscan(ArrayList<Process> processes) {
         localTime = -1;
         Queue<Process> diskQueue = new LinkedList<>();
-        System.out.printf("%-30s","[C-Scan with FD-scan]");
+        System.out.printf("%-45s","[C-Scan with FD-scan]");
         return processingForCScanWithFDscan(processes, diskQueue);
     }
-
 
     public int processingForFCFS(ArrayList<Process> processes, Queue<Process> diskQueue){
 
@@ -131,22 +144,6 @@ public class DISK {
         return headMovements;
     }
 
-    public Process findShortestSeekTime(Queue<Process> diskQueue){
-
-        Process closest = null;
-        int shortestDistance = diskSize;
-
-        for (Process p : diskQueue) {
-            int distance = Math.abs(p.getPosition() - headPosition);
-            if (distance < shortestDistance) {
-                shortestDistance = distance;
-                closest = p;
-            }
-        }
-
-        return closest;
-    }
-
     public int processingForScan(ArrayList<Process> processes, Queue<Process> diskQueue){
 
         processes.sort(Comparator.comparingInt(Process::getArrivalTime));
@@ -165,8 +162,6 @@ public class DISK {
 
                 headPosition += direction;
                 headMovements++;
-                diskUpdate(processesQueue, diskQueue);
-                removeProcessAtThisPosition(diskQueue);
 
                 if(headPosition >= diskSize){
                     direction = -1;
@@ -174,11 +169,65 @@ public class DISK {
                 if(headPosition <= 0) {
                     direction = 1;
                 }
+                diskUpdate(processesQueue, diskQueue);
+                removeProcessAtThisPosition(diskQueue);
 
             } else {
                 diskUpdate(processesQueue, diskQueue);
             }
         }
+
+        return headMovements;
+    }
+
+    public int processingForScanWithIrritatingProcesses(ArrayList<Process> processes, Queue<Process> diskQueue){
+
+        processes.sort(Comparator.comparingInt(Process::getArrivalTime));
+        Queue<Process> processesQueue = new LinkedList<>(processes);
+        headPosition = (int)(Math.random()*diskSize);
+
+        int irritatingProcessCounter = 0;
+        int maxIrritatingProcesses = 1000;
+
+        int headMovements = 0;
+        System.out.printf("%-10s", "[starting head position: " + headPosition + "]");
+
+        diskUpdate(processesQueue, diskQueue);
+
+        int direction = 1;
+        while (!isEveryProcessFinished(processes)) {
+
+            if (!diskQueue.isEmpty()) {
+
+                headPosition += direction;
+                headMovements++;
+
+                if(headPosition >= diskSize){
+                    direction = -1;
+                }
+                if(headPosition <= 0) {
+                    direction = 1;
+                }
+                // ------------------- extra feature ------------------------//
+                // -----------adding new processes after head ---------------//
+
+                if(headPosition > 0 && direction == 1 && irritatingProcessCounter < maxIrritatingProcesses) {
+                    Process iritatingProcess = generateIrritatingProcess(direction);
+                    if(iritatingProcess != null){
+                        processesQueue.add(iritatingProcess);
+                        processes.add(iritatingProcess);
+                        irritatingProcessCounter++;
+                    }
+                }
+                diskUpdate(processesQueue, diskQueue);
+                removeProcessAtThisPosition(diskQueue);
+
+            } else {
+                diskUpdate(processesQueue, diskQueue);
+            }
+        }
+
+        System.out.printf("%40s", "[Irritating processes generated: " + irritatingProcessCounter + "]");
 
         return headMovements;
     }
@@ -251,32 +300,15 @@ public class DISK {
             }
 
             ///Tutaj generuję real time processes z prawdopodobieństwem 1% co każdą iterację pętli
-            int luckyNumber = 23;
-            if(luckyNumber == (int)(Math.random()*100)){
-                int position = (int)(Math.random()*diskSize);
-                int deadline = (int)(Math.random()*300);
-                realTimeProcessesQueue.add(new Process(deadline, localTime, position));
+            Process realTimeProcess = generateRealTimeProcess();
+            if(realTimeProcess != null){
+                realTimeProcessesQueue.add(realTimeProcess);
             }
 
         }
 
         System.out.printf("%40s %40s %40s", "[Completed real time processes: " + numberOfCompletedRTP + "]", "[Uncompleted real time processes: " + numberOfUncompletedRTP + "]", "[Additional head movements: " + additionalHeadMovements + "]");
         return headMovements;
-    }
-
-    public Process findShortestDeadlineTime(Queue<Process> diskQueue){
-
-        Process closest = null;
-        int shortestDeadline = diskSize;
-
-        for (Process p : diskQueue) {
-            if (p.getId() < shortestDeadline) {
-                shortestDeadline = p.getId();
-                closest = p;
-            }
-        }
-
-        return closest;
     }
 
     public int processingForCScan(ArrayList<Process> processes, Queue<Process> diskQueue){
@@ -306,6 +338,57 @@ public class DISK {
                 diskUpdate(processesQueue, diskQueue);
             }
         }
+
+        return headMovements;
+    }
+
+    public int processingForCScanWithIrritatingProcesses(ArrayList<Process> processes, Queue<Process> diskQueue){
+
+        processes.sort(Comparator.comparingInt(Process::getArrivalTime));
+        Queue<Process> processesQueue = new LinkedList<>(processes);
+        headPosition = (int)(Math.random()*diskSize);
+
+        int irritatingProcessCounter = 0;
+        int maxIrritatingProcesses = 1000;
+
+        int headMovements = 0;
+        System.out.printf("%-10s", "[starting head position: " + headPosition + "]");
+
+        diskUpdate(processesQueue, diskQueue);
+
+        while (!isEveryProcessFinished(processes)) {
+
+            if (!diskQueue.isEmpty()) {
+
+                headPosition++;
+                headMovements++;
+                if (headPosition >= diskSize) {
+                    headPosition = 0;
+                }
+
+                // ------------------- extra feature ------------------------//
+                // -----------adding new processes after head ---------------//
+
+                if(headPosition > 0 && irritatingProcessCounter < maxIrritatingProcesses) {
+                    Process iritatingProcess = generateIrritatingProcess(1);
+                    if(iritatingProcess != null){
+                        processesQueue.add(iritatingProcess);
+                        processes.add(iritatingProcess);
+                        irritatingProcessCounter++;
+                    }
+                }
+
+                //-----------------------------------------------------------//
+
+                diskUpdate(processesQueue, diskQueue);
+                removeProcessAtThisPosition(diskQueue);
+
+            } else {
+                diskUpdate(processesQueue, diskQueue);
+            }
+        }
+
+        System.out.printf("%40s", "[Irritating processes generated: " + irritatingProcessCounter + "]");
 
         return headMovements;
     }
@@ -347,7 +430,7 @@ public class DISK {
                 ///jesli realTimeQueue nie jest pusta, to trzeba zająć się tymi procesami
                 ///najpierw usunac te ktore sa poza zasiegiem, a pozniej zajac sie tymi ktore sa
 
-                numberOfUncompletedRTP = removeUnfeasibleProcesess(realTimeProcessesQueue, numberOfUncompletedRTP);
+                numberOfUncompletedRTP = removeUnfeasibleProcesses(realTimeProcessesQueue, numberOfUncompletedRTP);
 
                 if(!realTimeProcessesQueue.isEmpty()){
                     Process current = findShortestDeadlineTime(realTimeProcessesQueue);
@@ -370,11 +453,9 @@ public class DISK {
                 }
             }
             ///Tutaj generuję real time processes z prawdopodobieństwem 1% co każdą iterację pętli
-            int luckyNumber = 23;
-            if(luckyNumber == (int)(Math.random()*100)){
-                int position = (int)(Math.random()*diskSize);
-                int deadline = (int)(Math.random()*300);
-                realTimeProcessesQueue.add(new Process(deadline, localTime, position));
+            Process realTimeProcess = generateRealTimeProcess();
+            if(realTimeProcess != null){
+                realTimeProcessesQueue.add(realTimeProcess);
             }
 
         }
@@ -383,7 +464,38 @@ public class DISK {
         return headMovements;
     }
 
-    public int removeUnfeasibleProcesess(Queue<Process> realTimeProcessesQueue, int numberOfUncompletedRTP){
+    public Process findShortestSeekTime(Queue<Process> diskQueue){
+
+        Process closest = null;
+        int shortestDistance = diskSize;
+
+        for (Process p : diskQueue) {
+            int distance = Math.abs(p.getPosition() - headPosition);
+            if (distance < shortestDistance) {
+                shortestDistance = distance;
+                closest = p;
+            }
+        }
+
+        return closest;
+    }
+
+    public Process findShortestDeadlineTime(Queue<Process> diskQueue){
+
+        Process closest = null;
+        int shortestDeadline = diskSize;
+
+        for (Process p : diskQueue) {
+            if (p.getId() < shortestDeadline) {
+                shortestDeadline = p.getId();
+                closest = p;
+            }
+        }
+
+        return closest;
+    }
+
+    public int removeUnfeasibleProcesses(Queue<Process> realTimeProcessesQueue, int numberOfUncompletedRTP){
         Iterator<Process> iterator = realTimeProcessesQueue.iterator();
         while (iterator.hasNext()) {
             Process process = iterator.next();
@@ -404,6 +516,25 @@ public class DISK {
                 process.setFinished(true);
             }
         }
+    }
+
+    public Process generateRealTimeProcess(){
+        int luckyNumber = 23;
+        if(luckyNumber == (int)(Math.random()*100)){
+            int position = (int)(Math.random()*diskSize);
+            int deadline = (int)(Math.random()*300);
+            Process realTimeProcess = new Process(deadline, localTime, position);
+            return realTimeProcess;
+        }
+        return null;
+    }
+
+    public Process generateIrritatingProcess(int direction){
+        int luckyNumber = 23;
+        if(luckyNumber == (int)(Math.random()*100)){
+            return new Process(0, localTime, headPosition + direction);
+        }
+        return null;
     }
 
     public void diskUpdate(Queue<Process> processesQueue, Queue<Process> diskQueue) {

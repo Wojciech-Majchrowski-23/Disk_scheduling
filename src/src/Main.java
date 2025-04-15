@@ -5,12 +5,12 @@ import java.util.ArrayList;
 public class Main {
     public static void main(String[] args) {
 
-        int numberOfDataSets = 5;
+        int numberOfDataSets = 4;
 
         ArrayList<Process>[] processChains = new ArrayList[numberOfDataSets];
 
         for(int i = 0; i < numberOfDataSets; i++){
-            processChains[i] = ProcessesGenerator.generateProcesses(50, 300);
+            processChains[i] = ProcessesGenerator.generateProcesses(100, 1000);
         }
 
         DISK disk = new DISK();
@@ -26,7 +26,9 @@ public class Main {
             System.out.printf("%30s %n","[head movements: " + disk.firstComeFirstServed(deepCopy(processChains[i])) + "]");
             System.out.printf("%30s %n","[head movements: " + disk.shortestSeekTimeFirst(deepCopy(processChains[i])) + "]");
             System.out.printf("%30s %n","[head movements: " + disk.scan(deepCopy(processChains[i])) + "]");
+            System.out.printf("%30s %n","[head movements: " + disk.scanWithIrritatingProcesses(deepCopy(processChains[i])) + "]");
             System.out.printf("%30s %n","[head movements: " + disk.cScan(deepCopy(processChains[i])) + "]");
+            System.out.printf("%30s %n","[head movements: " + disk.cScanWithIrritatingProcesses(deepCopy(processChains[i])) + "]");
             System.out.printf("%30s %n","[head movements: " + disk.scanWithEDF(deepCopy(processChains[i])) + "]");
             System.out.printf("%30s %n","[head movements: " + disk.cScanWithFDscan(deepCopy(processChains[i])) + "]");
 
